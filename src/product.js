@@ -18,6 +18,7 @@ class Product {
         this.discount = 0;
         this.tags = [];
         this.attributes = {};
+        this.priceHistory = [];
     }
 
     /**
@@ -193,6 +194,18 @@ class Product {
     }
 
     /**
+     * Checks if product has a specific tag
+     * @param {string} tag - Tag to check
+     * @returns {boolean} True if product has the tag
+     */
+    hasTag(tag) {
+        if (typeof tag !== 'string') {
+            return false;
+        }
+        return this.tags.includes(tag.toLowerCase());
+    }
+
+    /**
      * Sets product attributes
      * @param {string} key - Attribute key
      * @param {*} value - Attribute value
@@ -245,6 +258,26 @@ class Product {
             return false;
         }
         this.discount = discountPercent;
+        this.updatedAt = new Date();
+        return true;
+    }
+
+    /**
+     * Updates the product price
+     * @param {number} newPrice - New price value
+     * @returns {boolean} True if price was updated
+     */
+    updatePrice(newPrice) {
+        if (typeof newPrice !== 'number' || newPrice < 0 || newPrice > 1000000) {
+            return false;
+        }
+        const oldPrice = this.price;
+        this.price = newPrice;
+        this.priceHistory.push({
+            oldPrice: oldPrice,
+            newPrice: newPrice,
+            changedAt: new Date()
+        });
         this.updatedAt = new Date();
         return true;
     }
@@ -461,6 +494,19 @@ class ProductCatalog {
      */
     getAllCategories() {
         return Array.from(this.categories);
+    }
+
+    /**
+     * Gets all products
+     * @param {boolean} activeOnly - Only return active products
+     * @returns {Product[]} Array of products
+     */
+    getAllProducts(activeOnly = true) {
+        const products = Array.from(this.products.values());
+        if (activeOnly) {
+            return products.filter(p => p.isActive);
+        }
+        return products;
     }
 
     /**

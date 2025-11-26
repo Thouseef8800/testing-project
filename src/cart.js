@@ -312,6 +312,14 @@ class ShoppingCart {
     }
 
     /**
+     * Gets the coupon discount percentage
+     * @returns {number} Coupon discount percentage
+     */
+    getCouponDiscount() {
+        return this.couponDiscount;
+    }
+
+    /**
      * Calculates shipping cost
      * @param {Object} options - Shipping options
      * @returns {number} Shipping cost
@@ -348,6 +356,16 @@ class ShoppingCart {
     }
 
     /**
+     * Alias for getTotal for compatibility
+     * @param {number} taxRate - Tax rate percentage
+     * @param {Object} shippingOptions - Shipping options
+     * @returns {number} Total including tax and shipping
+     */
+    calculateTotal(taxRate = 0, shippingOptions = {}) {
+        return this.getTotal(taxRate, shippingOptions);
+    }
+
+    /**
      * Applies a coupon code
      * @param {string} code - Coupon code
      * @param {Object} couponDatabase - Database of valid coupons
@@ -363,7 +381,14 @@ class ShoppingCart {
         }
 
         const upperCode = code.toUpperCase();
-        const coupon = couponDatabase[upperCode];
+        
+        // Support both Map and Object for coupon database
+        let coupon;
+        if (couponDatabase instanceof Map) {
+            coupon = couponDatabase.get(upperCode);
+        } else {
+            coupon = couponDatabase[upperCode];
+        }
 
         if (!coupon) {
             return { success: false, message: 'Coupon not found' };
@@ -377,10 +402,13 @@ class ShoppingCart {
             return { success: false, message: `Minimum purchase of $${coupon.minPurchase} required` };
         }
 
+        // Support both discount and discountValue properties
+        const discount = coupon.discount !== undefined ? coupon.discount : coupon.discountValue;
+        
         this.couponCode = upperCode;
-        this.couponDiscount = coupon.discount;
+        this.couponDiscount = discount;
         this.updatedAt = new Date();
-        return { success: true, message: `Coupon applied: ${coupon.discount}% off` };
+        return { success: true, message: `Coupon applied: ${discount}% off` };
     }
 
     /**

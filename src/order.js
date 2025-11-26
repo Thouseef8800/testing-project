@@ -163,6 +163,53 @@ class Order {
     }
 
     /**
+     * Convenience method to confirm an order
+     * @returns {Object} Result with success flag
+     */
+    confirm() {
+        return this.updateStatus(OrderStatus.CONFIRMED);
+    }
+
+    /**
+     * Cancels the order
+     * @param {string} reason - Cancellation reason
+     * @returns {Object} Result with success flag
+     */
+    cancel(reason = '') {
+        if (this.status === OrderStatus.DELIVERED) {
+            return { success: false, message: 'Cannot cancel delivered order' };
+        }
+        if (this.status === OrderStatus.CANCELLED) {
+            return { success: false, message: 'Order is already cancelled' };
+        }
+        
+        this.status = OrderStatus.CANCELLED;
+        this.statusHistory.push({
+            status: OrderStatus.CANCELLED,
+            timestamp: new Date(),
+            note: reason || 'Order cancelled'
+        });
+        this.updatedAt = new Date();
+        return { success: true, message: 'Order cancelled' };
+    }
+
+    /**
+     * Sets tracking information
+     * @param {string} trackingNumber - Tracking number
+     * @param {string} carrier - Carrier name
+     * @returns {Object} Result with success flag
+     */
+    setTrackingInfo(trackingNumber, carrier = '') {
+        if (!trackingNumber || typeof trackingNumber !== 'string') {
+            return { success: false, message: 'Invalid tracking number' };
+        }
+        this.trackingNumber = trackingNumber;
+        this.carrier = carrier;
+        this.updatedAt = new Date();
+        return { success: true, message: 'Tracking info updated' };
+    }
+
+    /**
      * Sets payment method
      * @param {string} method - Payment method from PaymentMethod
      * @returns {boolean} True if method was set
@@ -183,6 +230,11 @@ class Order {
      * @returns {Object} Result with success flag
      */
     processPayment(paymentDetails) {
+        // Allow setting payment method from paymentDetails
+        if (paymentDetails && paymentDetails.method && !this.paymentMethod) {
+            this.setPaymentMethod(paymentDetails.method);
+        }
+        
         if (!this.paymentMethod) {
             return { success: false, message: 'Payment method not set' };
         }
