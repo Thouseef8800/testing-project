@@ -6,6 +6,32 @@ This project implements **Mutation Testing** for an E-Commerce Shopping Cart Sys
 
 **Current Mutation Score: 77.09%**
 
+
+
+Team Members and Contributions
+Team Member 1
+Name: Hymavathi Jayaramappa[MT2024067]
+
+Contributions:
+
+Designed and implemented Product and ProductCatalog modules
+Implemented Shopping Cart and CartManager modules
+Created unit tests for Product, Cart modules
+Configured Stryker mutation testing framework
+Documented mutation operators at unit level
+Team Member 2
+**Name: Thouseef Ahmed Syed[MT2024159]
+
+Contributions:
+
+Designed and implemented Order and OrderManager modules
+Implemented User and UserManager modules
+Created Inventory and Discount modules
+Created unit tests for Order, User, Inventory, Discount modules
+Documented mutation operators at integration level
+Prepared final documentation and README
+
+
 ## Project Structure
 
 ```
@@ -309,10 +335,10 @@ The `stryker.config.js` file configures:
 
 ## AI/LLM Tools Acknowledgment
 
-GitHub Copilot was used to assist with:
-- Code scaffolding and boilerplate generation
-- Test case suggestions
-- Documentation writing
+GitHub Copilot/Chatgpt was used to assist with:
+- Code scaffolding and formatting document 
+- Test case suggestions for missing cases
+
 
 All code was reviewed, modified, and validated by the team members.
 
@@ -353,6 +379,3 @@ npm run stryker
 npm run demo
 ```
 
-## License
-
-MIT License - For educational purposes only.
