@@ -1,4 +1,4 @@
-# E-Commerce Mutation Testing Project
+# E-Commerce Mutation & Fuzz Testing Project
 
 ## IIIT Bangalore - CSE 731: Software Testing
 ### Term I 2025-26: Project Work
@@ -7,20 +7,23 @@
 
 ## Project Overview
 
-This project implements **Mutation Testing** for an E-Commerce Shopping Cart System using the **Stryker Mutator** framework. The project demonstrates the application of various mutation operators at both unit and integration levels to validate the effectiveness of the test suite.
+This project implements **Mutation Testing** and **Fuzz Testing** for an E-Commerce Shopping Cart System. It combines two powerful testing techniques:
+
+1. **Mutation Testing** using **Stryker Mutator** - Evaluates test suite quality by injecting faults
+2. **Fuzz Testing** using **fast-check** - Property-based testing with random input generation to discover edge cases
 
 ## Team Members
 
 | Name | Roll Number | Contribution |
 |------|-------------|--------------|
-| [Team Member 1] | [Roll Number 1] | Source code implementation, Unit testing |
+| [Team Member 1] | [Roll Number 1] | Source code implementation, Unit testing, Fuzz testing |
 | [Team Member 2] | [Roll Number 2] | Integration testing, Mutation testing configuration |
 
 ## Project Structure
 
 ```
-ecommerce-mutation-testing/
-├── src/                    # Source code modules
+ecommerce-mutation-fuzz-testing/
+├── src/                    # Source code modules (~5,000+ LOC)
 │   ├── product.js          # Product management
 │   ├── cart.js             # Shopping cart operations
 │   ├── order.js            # Order processing
@@ -28,14 +31,16 @@ ecommerce-mutation-testing/
 │   ├── inventory.js        # Inventory management
 │   ├── discount.js         # Discounts and promotions
 │   └── index.js            # Main integration module
-├── tests/                  # Test suites
-│   ├── product.test.js
-│   ├── cart.test.js
-│   ├── order.test.js
-│   ├── user.test.js
-│   ├── inventory.test.js
-│   ├── discount.test.js
-│   └── index.test.js       # Integration tests
+├── tests/                  # Test suites (~5,000+ LOC)
+│   ├── product.test.js     # Product unit tests
+│   ├── cart.test.js        # Cart unit tests
+│   ├── order.test.js       # Order unit tests
+│   ├── user.test.js        # User unit tests
+│   ├── inventory.test.js   # Inventory unit tests
+│   ├── discount.test.js    # Discount unit tests
+│   ├── boundary.test.js    # Boundary condition tests
+│   ├── index.test.js       # Integration tests
+│   └── fuzz.test.js        # Fuzz testing suite
 ├── package.json            # Project dependencies
 ├── stryker.config.js       # Stryker configuration
 ├── demo.js                 # Demonstration script
@@ -47,9 +52,10 @@ ecommerce-mutation-testing/
 - **Runtime**: Node.js
 - **Testing Framework**: Mocha + Chai
 - **Mutation Testing**: Stryker Mutator v9.4.0
+- **Fuzz Testing**: fast-check (Property-based testing)
 - **Language**: JavaScript (ES6+)
 
-## Source Code Description (~1000+ lines)
+## Source Code Description (~5,000+ lines)
 
 The source code implements a complete e-commerce system with the following modules:
 
@@ -97,8 +103,14 @@ npm install
 ## Running Tests
 
 ```bash
-# Run all unit and integration tests
+# Run all tests (unit + integration + fuzz)
 npm test
+
+# Run only unit tests
+npm run test:unit
+
+# Run only fuzz tests
+npm run test:fuzz
 
 # Run tests with verbose output
 npm test -- --reporter spec
@@ -118,8 +130,94 @@ npm run stryker:dry-run
 
 ```bash
 # Run the demonstration script
-node demo.js
+npm run demo
 ```
+
+---
+
+## Fuzz Testing with fast-check
+
+### What is Fuzz Testing?
+
+Fuzz testing is an automated testing technique that generates random inputs to discover bugs, edge cases, and unexpected behaviors that might not be caught by traditional unit tests.
+
+### Fuzz Testing Techniques Used
+
+1. **Random Input Generation** - Generate random valid and invalid inputs
+2. **Boundary Value Fuzzing** - Test at boundaries of valid input ranges
+3. **Format String Fuzzing** - Test string inputs with special characters
+4. **Type Confusion Fuzzing** - Test with unexpected types
+5. **Combinatorial Fuzzing** - Test combinations of inputs
+6. **Property-Based Testing** - Verify invariants hold for all inputs
+
+### Fuzz Test Categories
+
+#### Product Fuzzing
+- Price validation with random positive/negative numbers
+- Product name with special characters and unicode
+- Rating calculations with random rating arrays
+
+#### Cart Fuzzing
+- Quantity validation with boundary values
+- Total calculation with random items and quantities
+- Coupon code handling with random strings
+
+#### Order Fuzzing
+- Credit card validation using Luhn algorithm fuzzing
+- Order amount handling with various number ranges
+- Payment processing with random payment data
+
+#### User Fuzzing
+- Email format validation with generated emails
+- Password strength validation with random passwords
+- Username handling with various character sets
+
+#### Inventory Fuzzing
+- Stock level management with extreme values
+- Low stock threshold detection
+- Stock adjustment operations
+
+#### Discount Fuzzing
+- Percentage discount calculations (0-100%)
+- Fixed discount with minimum order requirements
+- Coupon validation with random codes
+
+### Example Fuzz Test
+
+```javascript
+import fc from 'fast-check';
+
+it('should handle any positive number as price', () => {
+    fc.assert(
+        fc.property(
+            fc.float({ min: 0.01, max: 1000000, noNaN: true }),
+            (price) => {
+                const product = new Product('P1', 'Test', price, 'Desc', 'Cat');
+                expect(product.price).to.be.at.least(0);
+            }
+        ),
+        { numRuns: 100 }
+    );
+});
+
+it('should reject ratings outside valid range', () => {
+    fc.assert(
+        fc.property(
+            fc.oneof(
+                fc.integer({ min: -100, max: 0 }),
+                fc.integer({ min: 6, max: 100 })
+            ),
+            (rating) => {
+                const product = new Product('P1', 'Test', 10, 'Desc', 'Cat');
+                expect(() => product.addRating(rating)).to.throw();
+            }
+        ),
+        { numRuns: 100 }
+    );
+});
+```
+
+---
 
 ## Mutation Operators Used
 
@@ -201,10 +299,17 @@ it('should return false when not enough stock', function() {
 
 ## Expected Results
 
+### Mutation Testing Results
 After running mutation testing, expect:
 - **Mutation Score**: 70-90%
 - **Killed Mutants**: Majority killed by assertion tests
 - **Surviving Mutants**: Some equivalent mutants may survive
+
+### Fuzz Testing Results
+After running fuzz tests, expect:
+- **100+ property tests** passing
+- **Edge cases discovered** through random input generation
+- **Robustness validation** against unexpected inputs
 
 ## Stryker Configuration
 
@@ -233,9 +338,10 @@ After running `npm run stryker`, check:
 ## References
 
 1. Stryker Mutator: https://stryker-mutator.io/
-2. Mocha Testing Framework: https://mochajs.org/
-3. Chai Assertion Library: https://www.chaijs.com/
-4. Course Materials: IIIT Bangalore CSE 731
+2. fast-check (Property-based testing): https://github.com/dubzzz/fast-check
+3. Mocha Testing Framework: https://mochajs.org/
+4. Chai Assertion Library: https://www.chaijs.com/
+5. Course Materials: IIIT Bangalore CSE 731
 
 ---
 
@@ -245,14 +351,20 @@ After running `npm run stryker`, check:
 # Install dependencies
 npm install
 
-# Run tests
+# Run all tests
 npm test
+
+# Run unit tests only
+npm run test:unit
+
+# Run fuzz tests only
+npm run test:fuzz
 
 # Run mutation testing
 npm run stryker
 
 # Run demo
-node demo.js
+npm run demo
 ```
 
 ## License
