@@ -136,6 +136,8 @@ class StockAlert {
  * Inventory Item - tracks stock for a product
  */
 class InventoryItem {
+    static MAX_MOVEMENT_HISTORY = 100; // Maximum number of movements to keep
+
     constructor(productId, initialStock = 0) {
         this.productId = productId;
         this.currentStock = initialStock;
@@ -311,9 +313,9 @@ class InventoryItem {
      */
     recordMovement(movement) {
         this.movements.push(movement);
-        // Keep only last 100 movements
-        if (this.movements.length > 100) {
-            this.movements = this.movements.slice(-100);
+        // Keep only last MAX_MOVEMENT_HISTORY movements (configurable via class constant)
+        if (this.movements.length > InventoryItem.MAX_MOVEMENT_HISTORY) {
+            this.movements = this.movements.slice(-InventoryItem.MAX_MOVEMENT_HISTORY);
         }
     }
 

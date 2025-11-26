@@ -252,6 +252,12 @@ class Order {
 
     /**
      * Validates credit/debit card details
+     * NOTE: This implementation is for demonstration purposes only.
+     * In production:
+     * - Never store raw card numbers; use tokenization
+     * - Never log card numbers; mask them (e.g., ****-****-****-1234)
+     * - Use PCI DSS compliant payment gateway
+     * - Implement proper encryption for data in transit and at rest
      * @param {Object} details - Card details
      * @returns {boolean} True if valid
      * @private
@@ -260,7 +266,7 @@ class Order {
         if (!details.cardNumber || typeof details.cardNumber !== 'string') {
             return false;
         }
-        // Remove spaces and dashes
+        // Remove spaces and dashes (never log raw card number)
         const cardNumber = details.cardNumber.replace(/[\s-]/g, '');
         if (!/^\d{13,19}$/.test(cardNumber)) {
             return false;

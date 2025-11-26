@@ -48,8 +48,11 @@ const config = {
   // - ArrayDeclaration: Mutates array declarations
   mutator: {
     excludedMutations: [
-      // Exclude some very noisy mutations for cleaner results
-      "StringLiteral"  // Exclude string mutations as they create many equivalent mutants
+      // Exclude StringLiteral mutations for cleaner results:
+      // - String mutations create many equivalent mutants (e.g., "" vs "")
+      // - This exclusion slightly increases mutation score but provides more meaningful results
+      // - For comprehensive testing, remove this exclusion and address surviving string mutants
+      "StringLiteral"
     ]
   },
   
