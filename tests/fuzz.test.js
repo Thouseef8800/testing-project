@@ -182,9 +182,10 @@ describe('Fuzz Testing Suite', function() {
             fc.assert(
                 fc.property(
                     fc.integer({ min: 0, max: 10000 }),
-                    (stock) => {
+                    fc.uuid(),
+                    (stock, productId) => {
                         const inventory = new InventoryManager();
-                        const item = inventory.addInventoryItem(`P${Math.random()}`, stock);
+                        const item = inventory.addInventoryItem(productId, stock);
                         expect(item.currentStock).to.equal(stock);
                     }
                 ),
@@ -197,9 +198,9 @@ describe('Fuzz Testing Suite', function() {
                 fc.property(
                     fc.integer({ min: 100, max: 1000 }),
                     fc.integer({ min: 1, max: 50 }),
-                    (initialStock, adjustment) => {
+                    fc.uuid(),
+                    (initialStock, adjustment, productId) => {
                         const inventory = new InventoryManager();
-                        const productId = `P${Math.random()}`;
                         const item = inventory.addInventoryItem(productId, initialStock);
                         
                         // Add stock
@@ -220,9 +221,10 @@ describe('Fuzz Testing Suite', function() {
                 fc.property(
                     fc.integer({ min: 1, max: 100 }),
                     fc.integer({ min: 1, max: 100 }),
-                    (stock, threshold) => {
+                    fc.uuid(),
+                    (stock, threshold, productId) => {
                         const inventory = new InventoryManager();
-                        const item = inventory.addInventoryItem(`P${Math.random()}`, stock);
+                        const item = inventory.addInventoryItem(productId, stock);
                         item.reorderPoint = threshold;
                         
                         const needsReorder = item.needsReorder();
@@ -246,9 +248,10 @@ describe('Fuzz Testing Suite', function() {
                 fc.property(
                     fc.integer({ min: 1, max: 100 }),
                     fc.integer({ min: 100, max: 1000 }),
-                    (percentage, orderTotal) => {
+                    fc.uuid(),
+                    (percentage, orderTotal, codeId) => {
                         const discountManager = new DiscountManager();
-                        const code = `PCT${Math.floor(Math.random() * 100000)}`;
+                        const code = `PCT${codeId.substring(0, 8)}`;
                         const result = discountManager.createCoupon(code, 'percentage', percentage);
                         
                         if (result.success) {
@@ -264,13 +267,19 @@ describe('Fuzz Testing Suite', function() {
         });
 
         it('should reject invalid percentage values', () => {
-            const invalidPercentages = [-10, 0, 101, 200];
-            invalidPercentages.forEach(percentage => {
-                const discountManager = new DiscountManager();
-                const code = `INVALID${Math.floor(Math.random() * 100000)}`;
-                const result = discountManager.createCoupon(code, 'percentage', percentage);
-                expect(result.success).to.be.false;
-            });
+            fc.assert(
+                fc.property(
+                    fc.constantFrom(-10, 0, 101, 200),
+                    fc.uuid(),
+                    (percentage, codeId) => {
+                        const discountManager = new DiscountManager();
+                        const code = `INVALID${codeId.substring(0, 8)}`;
+                        const result = discountManager.createCoupon(code, 'percentage', percentage);
+                        expect(result.success).to.be.false;
+                    }
+                ),
+                { numRuns: 10 }
+            );
         });
     });
 
