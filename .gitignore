@@ -16,7 +16,6 @@ npm-debug.log*
 coverage/
 .nyc_output/
 reports/
-*.html
 mutation-report.html
 mutation-report.json
 

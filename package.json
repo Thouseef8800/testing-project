@@ -10,7 +10,9 @@
     "test": "mocha 'tests/**/*.test.js' --timeout 10000",
     "test:coverage": "mocha 'tests/**/*.test.js' --timeout 10000",
     "stryker": "stryker run",
-    "stryker:dry-run": "stryker run --dryRunOnly"
+    "stryker:dry-run": "stryker run --dryRunOnly",
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "keywords": [
     "mutation-testing",
@@ -21,6 +23,9 @@
   ],
   "author": "IIIT Bangalore Students",
   "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
   "devDependencies": {
     "@stryker-mutator/core": "^9.4.0",
     "@stryker-mutator/mocha-runner": "^9.4.0",
