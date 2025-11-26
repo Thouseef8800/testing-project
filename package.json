@@ -1,0 +1,35 @@
+{
+  "name": "ecommerce-mutation-fuzz-testing",
+  "version": "1.0.0",
+  "description": "E-Commerce System with Mutation Testing & Fuzz Testing - IIIT Bangalore CSE 731 Project",
+  "main": "src/index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "mocha 'tests/**/*.test.js' --timeout 10000",
+    "test:unit": "mocha 'tests/*.test.js' --ignore 'tests/fuzz.test.js' --timeout 10000",
+    "test:fuzz": "mocha 'tests/fuzz.test.js' --timeout 30000",
+    "stryker": "stryker run",
+    "stryker:dry-run": "stryker run --dryRunOnly",
+    "demo": "node demo.js"
+  },
+  "keywords": [
+    "mutation-testing",
+    "fuzz-testing",
+    "stryker",
+    "fast-check",
+    "mocha",
+    "testing",
+    "ecommerce"
+  ],
+  "author": "IIIT Bangalore Students",
+  "license": "MIT",
+  "devDependencies": {
+    "@stryker-mutator/core": "^9.4.0",
+    "@stryker-mutator/mocha-runner": "^9.4.0",
+    "chai": "^5.1.2",
+    "fast-check": "^4.3.0",
+    "mocha": "^11.1.0"
+  }
+}
