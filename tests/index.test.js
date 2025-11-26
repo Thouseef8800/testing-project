@@ -193,21 +193,33 @@ describe('ECommerceApp', function() {
             const result = app.removeFromCart('nonexistent', 'PROD001');
             expect(result).to.be.false;
         });
+
+        it('should return false for non-existent item in cart', function() {
+            const result = app.removeFromCart('user123', 'PROD999');
+            expect(result).to.be.false;
+        });
+
+        it('should release reserved stock when removing item', function() {
+            const beforeStock = app.inventoryManager.getInventoryItem('PROD001').getAvailableStock();
+            app.removeFromCart('user123', 'PROD001');
+            const afterStock = app.inventoryManager.getInventoryItem('PROD001').getAvailableStock();
+            expect(afterStock).to.equal(beforeStock + 2);
+        });
     });
 
     describe('updateCartQuantity()', function() {
         beforeEach(function() {
             app.initialize();
-            app.addToCart('user123', 'PROD001', 2);
+            app.addToCart('user123', 'PROD001', 5);
         });
 
         it('should update quantity', function() {
-            const result = app.updateCartQuantity('user123', 'PROD001', 5);
+            const result = app.updateCartQuantity('user123', 'PROD001', 8);
             expect(result.success).to.be.true;
             
             const cart = app.getCart('user123');
             const item = cart.getItem('PROD001');
-            expect(item.quantity).to.equal(5);
+            expect(item.quantity).to.equal(8);
         });
 
         it('should reject insufficient stock', function() {
@@ -220,6 +232,30 @@ describe('ECommerceApp', function() {
             const result = app.updateCartQuantity('nonexistent', 'PROD001', 3);
             expect(result.success).to.be.false;
             expect(result.message).to.equal('Cart not found');
+        });
+
+        it('should reject non-existent item in cart', function() {
+            const result = app.updateCartQuantity('user123', 'PROD999', 3);
+            expect(result.success).to.be.false;
+            expect(result.message).to.equal('Item not in cart');
+        });
+
+        it('should decrease quantity and release stock', function() {
+            const beforeStock = app.inventoryManager.getInventoryItem('PROD001').getAvailableStock();
+            const result = app.updateCartQuantity('user123', 'PROD001', 2);
+            expect(result.success).to.be.true;
+            
+            const afterStock = app.inventoryManager.getInventoryItem('PROD001').getAvailableStock();
+            expect(afterStock).to.equal(beforeStock + 3);
+        });
+
+        it('should keep same quantity when no change', function() {
+            const result = app.updateCartQuantity('user123', 'PROD001', 5);
+            expect(result.success).to.be.true;
+            
+            const cart = app.getCart('user123');
+            const item = cart.getItem('PROD001');
+            expect(item.quantity).to.equal(5);
         });
     });
 
@@ -471,6 +507,43 @@ describe('ECommerceApp', function() {
             expect(result.success).to.be.true;
             expect(result.refundAmount).to.be.greaterThan(0);
         });
+
+        it('should reject return of product not in order', function() {
+            const order = app.getOrder(orderId);
+            order.updateStatus(OrderStatus.CONFIRMED);
+            order.updateStatus(OrderStatus.PROCESSING);
+            order.updateStatus(OrderStatus.SHIPPED);
+            order.updateStatus(OrderStatus.DELIVERED);
+            
+            const result = app.processReturn(orderId, 'PROD999', 1);
+            expect(result.success).to.be.false;
+            expect(result.message).to.equal('Product not found in order');
+        });
+
+        it('should reject return quantity exceeding ordered quantity', function() {
+            const order = app.getOrder(orderId);
+            order.updateStatus(OrderStatus.CONFIRMED);
+            order.updateStatus(OrderStatus.PROCESSING);
+            order.updateStatus(OrderStatus.SHIPPED);
+            order.updateStatus(OrderStatus.DELIVERED);
+            
+            const result = app.processReturn(orderId, 'PROD001', 10);
+            expect(result.success).to.be.false;
+            expect(result.message).to.equal('Return quantity exceeds ordered quantity');
+        });
+
+        it('should update product stock after return', function() {
+            const order = app.getOrder(orderId);
+            order.updateStatus(OrderStatus.CONFIRMED);
+            order.updateStatus(OrderStatus.PROCESSING);
+            order.updateStatus(OrderStatus.SHIPPED);
+            order.updateStatus(OrderStatus.DELIVERED);
+            
+            const beforeStock = app.productCatalog.getProduct('PROD001').stock;
+            app.processReturn(orderId, 'PROD001', 1);
+            const afterStock = app.productCatalog.getProduct('PROD001').stock;
+            expect(afterStock).to.equal(beforeStock + 1);
+        });
     });
 
     describe('getLowStockAlerts()', function() {
@@ -479,6 +552,14 @@ describe('ECommerceApp', function() {
         });
 
         it('should return alerts with product info', function() {
+            const alerts = app.getLowStockAlerts();
+            expect(alerts).to.be.an('array');
+        });
+
+        it('should return alert for unknown product', function() {
+            // Create an alert for a non-existent product
+            app.inventoryManager.addInventoryItem('UNKNOWN_PROD', 1);
+            app.inventoryManager.getInventoryItem('UNKNOWN_PROD').reorderPoint = 10;
             const alerts = app.getLowStockAlerts();
             expect(alerts).to.be.an('array');
         });
@@ -503,6 +584,82 @@ describe('ECommerceApp', function() {
             const result = app.restockProduct('NONEXISTENT', 50);
             expect(result.success).to.be.false;
             expect(result.message).to.equal('Product not found');
+        });
+
+        it('should restock without purchase order', function() {
+            const result = app.restockProduct('PROD001', 25);
+            expect(result.success).to.be.true;
+        });
+    });
+
+    describe('checkout() with coupon', function() {
+        const validAddress = {
+            street: '123 Main St',
+            city: 'New York',
+            state: 'NY',
+            zipCode: '10001',
+            country: 'USA'
+        };
+
+        beforeEach(function() {
+            app.initialize();
+            app.addToCart('user123', 'PROD001', 1);
+            const cart = app.getCart('user123');
+            cart.setShippingAddress(validAddress);
+            cart.setBillingAddress(validAddress);
+        });
+
+        it('should record coupon usage on successful checkout', function() {
+            app.applyCoupon('user123', 'SAVE10');
+            
+            const result = app.checkout('user123', { method: PaymentMethod.CASH_ON_DELIVERY });
+            expect(result.success).to.be.true;
+            
+            // Verify coupon usage was recorded
+            const coupon = app.discountManager.getCoupon('SAVE10');
+            expect(coupon.usageCount).to.be.greaterThan(0);
+        });
+    });
+
+    describe('getProductDetails() edge cases', function() {
+        beforeEach(function() {
+            app.initialize();
+        });
+
+        it('should show inStock false when product is out of stock', function() {
+            // Deplete stock
+            const product = app.productCatalog.getProduct('PROD001');
+            const inventory = app.inventoryManager.getInventoryItem('PROD001');
+            inventory.removeStock(inventory.currentStock);
+            
+            const details = app.getProductDetails('PROD001');
+            expect(details.inStock).to.be.false;
+            expect(details.availableStock).to.equal(0);
+        });
+
+        it('should return details for product without inventory', function() {
+            // Create product without inventory
+            const product = new Product('NOINV001', 'No Inventory Product', 10, 'Category', 100, 'Test');
+            app.productCatalog.addProduct(product);
+            
+            const details = app.getProductDetails('NOINV001');
+            expect(details).to.not.be.null;
+            expect(details.availableStock).to.equal(0);
+            expect(details.inStock).to.be.false;
+        });
+    });
+
+    describe('searchProducts() with pricing', function() {
+        beforeEach(function() {
+            app.initialize();
+        });
+
+        it('should include pricing info in search results', function() {
+            const results = app.searchProducts('Wireless');
+            expect(results.length).to.be.greaterThan(0);
+            results.forEach(r => {
+                expect(r.pricing).to.not.be.undefined;
+            });
         });
     });
 

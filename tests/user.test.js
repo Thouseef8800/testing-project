@@ -665,6 +665,26 @@ describe('UserManager', function() {
             const active = manager.getAllUsers({ status: AccountStatus.ACTIVE });
             expect(active.length).to.equal(1);
         });
+
+        it('should exclude users that dont match role filter', function() {
+            const result = manager.register('admin@example.com', 'Password123', 'Admin', 'User');
+            result.user.role = UserRole.ADMIN;
+            manager.register('user@example.com', 'Password123', 'Normal', 'User');
+            
+            const customers = manager.getAllUsers({ role: UserRole.CUSTOMER });
+            expect(customers.length).to.equal(1);
+            expect(customers[0].email).to.equal('user@example.com');
+        });
+
+        it('should exclude users that dont match status filter', function() {
+            const result = manager.register('test@example.com', 'Password123', 'John', 'Doe');
+            result.user.verifyAccount(result.verificationToken);
+            manager.register('pending@example.com', 'Password123', 'Jane', 'Smith');
+            
+            const pending = manager.getAllUsers({ status: AccountStatus.PENDING_VERIFICATION });
+            expect(pending.length).to.equal(1);
+            expect(pending[0].email).to.equal('pending@example.com');
+        });
     });
 
     describe('initiatePasswordReset()', function() {
@@ -692,6 +712,68 @@ describe('UserManager', function() {
             expect(stats.totalUsers).to.equal(2);
             expect(stats.activeUsers).to.equal(1);
             expect(stats.pendingUsers).to.equal(1);
+        });
+
+        it('should count active sessions correctly', function() {
+            const result = manager.register('test@example.com', 'Password123', 'John', 'Doe');
+            result.user.verifyAccount(result.verificationToken);
+            manager.authenticate('test@example.com', 'Password123');
+            
+            const stats = manager.getStatistics();
+            expect(stats.activeSessions).to.equal(1);
+        });
+
+        it('should not count inactive sessions', function() {
+            const result = manager.register('test@example.com', 'Password123', 'John', 'Doe');
+            result.user.verifyAccount(result.verificationToken);
+            const authResult = manager.authenticate('test@example.com', 'Password123');
+            manager.logout(authResult.session.sessionId);
+            
+            const stats = manager.getStatistics();
+            expect(stats.activeSessions).to.equal(0);
+        });
+    });
+
+    describe('deleteUser() session invalidation', function() {
+        it('should invalidate all sessions for deleted user', function() {
+            const result = manager.register('test@example.com', 'Password123', 'John', 'Doe');
+            result.user.verifyAccount(result.verificationToken);
+            
+            const session1 = manager.authenticate('test@example.com', 'Password123');
+            const session2 = manager.authenticate('test@example.com', 'Password123');
+            
+            manager.deleteUser(result.user.id);
+            
+            expect(manager.validateSession(session1.session.sessionId).success).to.be.false;
+            expect(manager.validateSession(session2.session.sessionId).success).to.be.false;
+        });
+
+        it('should not invalidate sessions for other users', function() {
+            const result1 = manager.register('test1@example.com', 'Password123', 'John', 'Doe');
+            result1.user.verifyAccount(result1.verificationToken);
+            const result2 = manager.register('test2@example.com', 'Password123', 'Jane', 'Smith');
+            result2.user.verifyAccount(result2.verificationToken);
+            
+            const session1 = manager.authenticate('test1@example.com', 'Password123');
+            const session2 = manager.authenticate('test2@example.com', 'Password123');
+            
+            manager.deleteUser(result1.user.id);
+            
+            expect(manager.validateSession(session1.session.sessionId).success).to.be.false;
+            expect(manager.validateSession(session2.session.sessionId).success).to.be.true;
+        });
+    });
+
+    describe('validateSession() with user status', function() {
+        it('should reject session if user becomes inactive', function() {
+            const result = manager.register('test@example.com', 'Password123', 'John', 'Doe');
+            result.user.verifyAccount(result.verificationToken);
+            const authResult = manager.authenticate('test@example.com', 'Password123');
+            
+            result.user.deactivate();
+            
+            const validateResult = manager.validateSession(authResult.session.sessionId);
+            expect(validateResult.success).to.be.false;
         });
     });
 });

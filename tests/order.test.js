@@ -540,3 +540,267 @@ describe('OrderManager', function() {
         });
     });
 });
+
+// Additional payment validation tests
+describe('Payment Validation Edge Cases', function() {
+    let cart;
+    let order;
+    const validAddress = {
+        street: '123 Main St',
+        city: 'New York',
+        state: 'NY',
+        zipCode: '10001',
+        country: 'USA'
+    };
+
+    beforeEach(function() {
+        cart = new ShoppingCart('user123');
+        const product = new Product('P001', 'Test Product', 50, 'Electronics', 100);
+        cart.addItem(product, 2);
+        cart.setShippingAddress(validAddress);
+        cart.setBillingAddress(validAddress);
+        order = new Order(cart);
+    });
+
+    describe('Credit Card Validation', function() {
+        beforeEach(function() {
+            order.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+        });
+
+        it('should reject card number with wrong length', function() {
+            const result = order.processPayment({
+                cardNumber: '123456789',
+                expiryMonth: '12',
+                expiryYear: (new Date().getFullYear() + 1).toString(),
+                cvv: '123',
+                cardholderName: 'John Doe'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject invalid expiry month (>12)', function() {
+            const result = order.processPayment({
+                cardNumber: '4532015112830366',
+                expiryMonth: '13',
+                expiryYear: (new Date().getFullYear() + 1).toString(),
+                cvv: '123',
+                cardholderName: 'John Doe'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject invalid expiry month (0)', function() {
+            const result = order.processPayment({
+                cardNumber: '4532015112830366',
+                expiryMonth: '0',
+                expiryYear: (new Date().getFullYear() + 1).toString(),
+                cvv: '123',
+                cardholderName: 'John Doe'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject missing expiry data', function() {
+            const result = order.processPayment({
+                cardNumber: '4532015112830366',
+                cvv: '123',
+                cardholderName: 'John Doe'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject invalid CVV', function() {
+            const result = order.processPayment({
+                cardNumber: '4532015112830366',
+                expiryMonth: '12',
+                expiryYear: (new Date().getFullYear() + 1).toString(),
+                cvv: '12',
+                cardholderName: 'John Doe'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject short cardholder name', function() {
+            const result = order.processPayment({
+                cardNumber: '4532015112830366',
+                expiryMonth: '12',
+                expiryYear: (new Date().getFullYear() + 1).toString(),
+                cvv: '123',
+                cardholderName: 'A'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should accept card number with spaces', function() {
+            const result = order.processPayment({
+                cardNumber: '4532 0151 1283 0366',
+                expiryMonth: '12',
+                expiryYear: (new Date().getFullYear() + 1).toString(),
+                cvv: '123',
+                cardholderName: 'John Doe'
+            });
+            expect(result.success).to.be.true;
+        });
+
+        it('should accept card number with dashes', function() {
+            const result = order.processPayment({
+                cardNumber: '4532-0151-1283-0366',
+                expiryMonth: '12',
+                expiryYear: (new Date().getFullYear() + 1).toString(),
+                cvv: '123',
+                cardholderName: 'John Doe'
+            });
+            expect(result.success).to.be.true;
+        });
+
+        it('should reject expired card in current month', function() {
+            const now = new Date();
+            const result = order.processPayment({
+                cardNumber: '4532015112830366',
+                expiryMonth: (now.getMonth()).toString().padStart(2, '0'),
+                expiryYear: now.getFullYear().toString(),
+                cvv: '123',
+                cardholderName: 'John Doe'
+            });
+            // If current month is January (0), previous month check won't fail
+            if (now.getMonth() > 0) {
+                expect(result.success).to.be.false;
+            }
+        });
+
+        it('should reject non-string card number', function() {
+            const result = order.processPayment({
+                cardNumber: 4532015112830366,
+                expiryMonth: '12',
+                expiryYear: (new Date().getFullYear() + 1).toString(),
+                cvv: '123',
+                cardholderName: 'John Doe'
+            });
+            expect(result.success).to.be.false;
+        });
+    });
+
+    describe('Bank Transfer Validation', function() {
+        beforeEach(function() {
+            order.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        });
+
+        it('should reject short account number', function() {
+            const result = order.processPayment({
+                accountNumber: '1234567',
+                routingNumber: '123456789'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject short routing number', function() {
+            const result = order.processPayment({
+                accountNumber: '12345678901234',
+                routingNumber: '1234567'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject missing account number', function() {
+            const result = order.processPayment({
+                routingNumber: '123456789'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject missing routing number', function() {
+            const result = order.processPayment({
+                accountNumber: '12345678901234'
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject non-string account number', function() {
+            const result = order.processPayment({
+                accountNumber: 12345678901234,
+                routingNumber: '123456789'
+            });
+            expect(result.success).to.be.false;
+        });
+    });
+
+    describe('PayPal Validation', function() {
+        beforeEach(function() {
+            order.setPaymentMethod(PaymentMethod.PAYPAL);
+        });
+
+        it('should reject non-string email', function() {
+            const result = order.processPayment({
+                email: 123
+            });
+            expect(result.success).to.be.false;
+        });
+
+        it('should reject missing email', function() {
+            const result = order.processPayment({});
+            expect(result.success).to.be.false;
+        });
+    });
+
+    describe('Payment Details Validation', function() {
+        it('should reject null payment details', function() {
+            order.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+            const result = order.processPayment(null);
+            expect(result.success).to.be.false;
+        });
+
+        it('should handle payment method set from details', function() {
+            const result = order.processPayment({
+                method: PaymentMethod.CASH_ON_DELIVERY
+            });
+            expect(result.success).to.be.true;
+        });
+
+        it('should process debit card payment', function() {
+            order.setPaymentMethod(PaymentMethod.DEBIT_CARD);
+            const result = order.processPayment({
+                cardNumber: '4532015112830366',
+                expiryMonth: '12',
+                expiryYear: (new Date().getFullYear() + 1).toString(),
+                cvv: '123',
+                cardholderName: 'John Doe'
+            });
+            expect(result.success).to.be.true;
+        });
+    });
+
+    describe('Order Tracking', function() {
+        it('should set tracking with estimated delivery', function() {
+            const estimatedDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            const result = order.setTrackingInfo('TRACK123', 'FedEx', estimatedDate);
+            expect(result.success).to.be.true;
+            expect(order.estimatedDelivery).to.equal(estimatedDate);
+        });
+
+        it('should reject tracking for refunded order', function() {
+            order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
+            order.processPayment({});
+            order.updateStatus(OrderStatus.PROCESSING);
+            order.updateStatus(OrderStatus.SHIPPED);
+            order.updateStatus(OrderStatus.DELIVERED);
+            order.refund();
+            
+            const result = order.setTrackingInfo('TRACK123', 'FedEx');
+            expect(result.success).to.be.false;
+        });
+
+        it('should not set estimated delivery if not a Date', function() {
+            const result = order.setTrackingInfo('TRACK123', 'FedEx', 'invalid');
+            expect(result.success).to.be.true;
+            expect(order.estimatedDelivery).to.be.null;
+        });
+    });
+
+    describe('Order Confirm convenience method', function() {
+        it('should confirm order using convenience method', function() {
+            const result = order.confirm();
+            expect(result.success).to.be.true;
+            expect(order.status).to.equal(OrderStatus.CONFIRMED);
+        });
+    });
+});

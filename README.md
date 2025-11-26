@@ -1,28 +1,14 @@
-# E-Commerce Mutation & Fuzz Testing Project
-
-## IIIT Bangalore - CSE 731: Software Testing
-### Term I 2025-26: Project Work
-
----
+# E-Commerce Mutation Testing Project
 
 ## Project Overview
 
-This project implements **Mutation Testing** and **Fuzz Testing** for an E-Commerce Shopping Cart System. It combines two powerful testing techniques:
+This project implements **Mutation Testing** for an E-Commerce Shopping Cart System using **Stryker Mutator**. The project also includes **Fuzz Testing** using **fast-check** for property-based testing.
 
-1. **Mutation Testing** using **Stryker Mutator** - Evaluates test suite quality by injecting faults
-2. **Fuzz Testing** using **fast-check** - Property-based testing with random input generation to discover edge cases
-
-## Team Members
-
-| Name | Roll Number | Contribution |
-|------|-------------|--------------|
-| [Team Member 1] | [Roll Number 1] | Source code implementation, Unit testing, Fuzz testing |
-| [Team Member 2] | [Roll Number 2] | Integration testing, Mutation testing configuration |
+**Current Mutation Score: 77.09%**
 
 ## Project Structure
 
 ```
-ecommerce-mutation-fuzz-testing/
 ├── src/                    # Source code modules (~5,000+ LOC)
 │   ├── product.js          # Product management
 │   ├── cart.js             # Shopping cart operations
@@ -31,7 +17,7 @@ ecommerce-mutation-fuzz-testing/
 │   ├── inventory.js        # Inventory management
 │   ├── discount.js         # Discounts and promotions
 │   └── index.js            # Main integration module
-├── tests/                  # Test suites (~5,000+ LOC)
+├── tests/                  # Test suites (~6,000+ LOC)
 │   ├── product.test.js     # Product unit tests
 │   ├── cart.test.js        # Cart unit tests
 │   ├── order.test.js       # Order unit tests
@@ -297,19 +283,20 @@ it('should return false when not enough stock', function() {
 });
 ```
 
-## Expected Results
+## Mutation Testing Results
 
-### Mutation Testing Results
-After running mutation testing, expect:
-- **Mutation Score**: 70-90%
-- **Killed Mutants**: Majority killed by assertion tests
-- **Surviving Mutants**: Some equivalent mutants may survive
+After running mutation testing with `npm run stryker`:
 
-### Fuzz Testing Results
-After running fuzz tests, expect:
-- **100+ property tests** passing
-- **Edge cases discovered** through random input generation
-- **Robustness validation** against unexpected inputs
+| File | Mutation Score | Killed | Survived |
+|------|----------------|--------|----------|
+| discount.js | 86.56% | 496 | 75 |
+| product.js | 82.51% | 434 | 85 |
+| cart.js | 78.43% | 440 | 103 |
+| user.js | 77.59% | 501 | 121 |
+| inventory.js | 75.86% | 399 | 93 |
+| order.js | 67.73% | 381 | 120 |
+| index.js | 64.15% | 170 | 89 |
+| **Total** | **77.09%** | **2821** | **686** |
 
 ## Stryker Configuration
 
@@ -341,7 +328,6 @@ After running `npm run stryker`, check:
 2. fast-check (Property-based testing): https://github.com/dubzzz/fast-check
 3. Mocha Testing Framework: https://mochajs.org/
 4. Chai Assertion Library: https://www.chaijs.com/
-5. Course Materials: IIIT Bangalore CSE 731
 
 ---
 
