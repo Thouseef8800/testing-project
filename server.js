@@ -191,7 +191,7 @@ app.get('/api/cart', (req, res) => {
     }
     
     const cart = ecommerceApp.getCart(currentUser.id);
-    const items = cart.getItems().map(item => ({
+    const items = cart.getAllItems().map(item => ({
         productId: item.productId,
         name: item.name,
         price: item.price,
