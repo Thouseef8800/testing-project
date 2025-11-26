@@ -10,13 +10,13 @@
  * 3. Property-Based Testing - Verify invariants hold for all inputs
  */
 
-import { expect } from 'chai';
-import fc from 'fast-check';
-import { Product, ProductCatalog } from '../src/product.js';
-import { ShoppingCart } from '../src/cart.js';
-import { UserManager } from '../src/user.js';
-import { InventoryManager } from '../src/inventory.js';
-import { DiscountManager } from '../src/discount.js';
+const { expect } = require('chai');
+const fc = require('fast-check');
+const { Product, ProductCatalog } = require('../src/product');
+const { ShoppingCart } = require('../src/cart');
+const { UserManager } = require('../src/user');
+const { InventoryManager } = require('../src/inventory');
+const { DiscountManager } = require('../src/discount');
 
 describe('Fuzz Testing Suite', function() {
     this.timeout(60000); // Fuzz tests may take longer

@@ -29,9 +29,7 @@ const config = {
   
   // Source files to mutate
   mutate: [
-    "src/**/*.js",
-    "!src/**/*.test.js",
-    "!src/**/*.spec.js"
+    "src/**/*.js"
   ],
   
   // Mutation operators to use
@@ -74,8 +72,8 @@ const config = {
     fileName: "mutation-report.json"
   },
   
-  // Coverage analysis
-  coverageAnalysis: "perTest",
+  // Coverage analysis - use "off" for CommonJS compatibility with Stryker instrumentation
+  coverageAnalysis: "off",
   
   // Timeout settings
   timeoutMS: 60000,
@@ -95,7 +93,13 @@ const config = {
     high: 80,
     low: 60,
     break: 50
-  }
+  },
+  
+  // Disable TypeScript and ensure CommonJS
+  disableTypeChecks: "**/*.js",
+  
+  // Temp directory
+  tempDirName: ".stryker-tmp"
 };
 
 module.exports = config;

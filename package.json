@@ -2,6 +2,7 @@
   "name": "ecommerce-mutation-fuzz-testing",
   "version": "1.0.0",
   "description": "E-Commerce System with Mutation Testing & Fuzz Testing - IIIT Bangalore CSE 731 Project",
+  "type": "commonjs",
   "main": "src/index.js",
   "directories": {
     "test": "tests"
